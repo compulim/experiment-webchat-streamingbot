@@ -16,5 +16,23 @@
   "scripts": {
     "precommit": "eslint .",
     "start": "node-dev --no-deps --no-notify --respawn ."
+  },
+  "dependencies": {
+    "botbuilder": "^4.21.0",
+    "dotenv": "^16.3.1",
+    "math-random": "^2.0.1",
+    "pretty-ms": "^8.0.0",
+    "restify": "^11.1.0"
+  },
+  "devDependencies": {
+    "eslint": "^8.52.0",
+    "eslint-config-standard": "^17.1.0",
+    "eslint-plugin-import": "^2.29.0",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-prettier": "^5.0.1",
+    "eslint-plugin-promise": "^6.1.1",
+    "eslint-plugin-standard": "^5.0.0",
+    "node-dev": "^8.0.0",
+    "prettier": "^3.0.3"
   }
 }
