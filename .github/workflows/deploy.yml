@@ -11,6 +11,9 @@ on:
     branches:
       - main
 
+env:
+  PUBLISH_PROFILE: ${{ secrets.PUBLISH_PROFILE }}
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -62,16 +65,16 @@ jobs:
           name: package
 
       - id: deploy
-        if: secrets.PUBLISH_PROFILE
+        if: env.PUBLISH_PROFILE
         name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
         with:
           app-name: 'webchat-relaybot'
           slot-name: production
-          publish-profile: ${{ secrets.PUBLISH_PROFILE }}
+          publish-profile: ${{ env.PUBLISH_PROFILE }}
           package: zipdeploy.zip
 
-      - if: secrets.PUBLISH_PROFILE
+      - if: env.PUBLISH_PROFILE
         name: Ping deployment
         # We need to sleep because Azure Web Apps need time to pick up changes
         run: |
