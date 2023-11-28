@@ -75,7 +75,7 @@ export default class EchoBot extends ActivityHandler {
             }
 
             // await context.updateActivity({ id, text: TOKENS, type: 'message' });
-            await context.sendActivity({ id, suggestedActions: SUGGESTED_ACTIONS,text: TOKENS, type: 'message' });
+            await context.sendActivity({ id, suggestedActions: SUGGESTED_ACTIONS, text: TOKENS, type: 'message' });
           });
         })();
       } else if (text === '2') {
