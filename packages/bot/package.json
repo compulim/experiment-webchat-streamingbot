@@ -1,0 +1,40 @@
+{
+  "name": "bot",
+  "version": "0.0.0-0",
+  "license": "MIT",
+  "private": true,
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "iisnode.yml",
+    "src/**/*",
+    "web.config"
+  ],
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "precommit": "eslint .",
+    "start": "nodemon ."
+  },
+  "dependencies": {
+    "botbuilder": "^4.21.0",
+    "dotenv": "^16.3.1",
+    "eventsource-parser": "^1.1.1",
+    "limiter": "^2.1.0",
+    "math-random": "^2.0.1",
+    "pretty-ms": "^8.0.0",
+    "restify": "^11.1.0"
+  },
+  "devDependencies": {
+    "eslint": "^8.52.0",
+    "eslint-config-standard": "^17.1.0",
+    "eslint-plugin-import": "^2.29.0",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-prettier": "^5.0.1",
+    "eslint-plugin-promise": "^6.1.1",
+    "eslint-plugin-standard": "^5.0.0",
+    "nodemon": "^3.0.1",
+    "prettier": "^3.0.3"
+  }
+}

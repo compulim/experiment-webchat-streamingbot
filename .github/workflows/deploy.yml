@@ -11,6 +11,10 @@ on:
     branches:
       - main
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -23,34 +27,19 @@ jobs:
         with:
           node-version: '18'
 
-      - run: npm ci
+      - run: npm ci --install-strategy linked
       - continue-on-error: true
-        run: npm run precommit --if-present
-      - run: npm run build --if-present
-      - run: npm test --if-present
-      - run: npm pack
-      - run: tar xvf *.tgz
-
-      - name: Run zip -1rq ../zipdeploy.zip .
-        run: |
-          zip -1rq zipdeploy.zip node_modules
-          cd package
-          ls -laR
-          zip -1rq ../zipdeploy.zip .
-
-      - name: Upload artifact (tarball)
-        uses: actions/upload-artifact@v2
+        run: npm run precommit --if-present --workspaces
+      - run: npm run build --if-present --workspaces
+      - run: npm test --if-present --workspaces
+      - run: zip -1r zipdeploy.zip
+        working-directory: ./packages/bot/
+      - uses: actions/upload-artifact@v2
         with:
-          name: package
-          path: '*.tgz'
+          name: bot
+          path: ./packages/bot/zipdeploy.zip
 
-      - name: Upload artifact (Zip Deploy)
-        uses: actions/upload-artifact@v2
-        with:
-          name: package
-          path: zipdeploy.zip
-
-  deploy:
+  azure-deploy:
     environment:
       name: azure
       url: ${{ steps.deploy.outputs.webapp-url }}
@@ -62,7 +51,7 @@ jobs:
       - name: Download artifact
         uses: actions/download-artifact@v2
         with:
-          name: package
+          name: bot
 
       - id: deploy
         name: Deploy to Azure Web App

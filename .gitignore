@@ -1,3 +1,4 @@
 /.env*
-/lib/
+/.tmp
 /node_modules/
+/tarballs/
