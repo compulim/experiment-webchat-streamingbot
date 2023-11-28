@@ -14,6 +14,21 @@ const CHUNK_INTERVAL = 10;
 const TOKENS =
   'Alfa Bravo Charlie Delta Echo Foxtrot Golf Hotel India Juliett Kilo Lima Mike November Oscar Papa Quebec Romeo Sierra Tango Uniform Victor Whiskey Xray Yankee Zulu';
 
+const SUGGESTED_ACTIONS = {
+  to: [],
+  actions: [
+    {
+      type: 'imBack',
+      value: 'Give me a sample Markdown text.'
+    },
+    {
+      text: '1',
+      title: 'Say A to Z.',
+      type: 'messageBack'
+    }
+  ]
+};
+
 export default class EchoBot extends ActivityHandler {
   constructor() {
     super();
@@ -60,7 +75,7 @@ export default class EchoBot extends ActivityHandler {
             }
 
             // await context.updateActivity({ id, text: TOKENS, type: 'message' });
-            await context.sendActivity({ id, text: TOKENS, type: 'message' });
+            await context.sendActivity({ id, suggestedActions: SUGGESTED_ACTIONS,text: TOKENS, type: 'message' });
           });
         })();
       } else if (text === '2') {
@@ -166,9 +181,15 @@ export default class EchoBot extends ActivityHandler {
                 });
               }
 
-              await context.sendActivity(final.join(''));
+              await context.sendActivity({
+                suggestedActions: SUGGESTED_ACTIONS,
+                text: final.join('')
+              });
             } catch ({ message, stack }) {
-              await context.sendActivity(`Bot failed:\n\n${JSON.stringify({ message, stack }, null, 2)}`);
+              await context.sendActivity({
+                suggestedActions: SUGGESTED_ACTIONS,
+                text: `Bot failed:\n\n${JSON.stringify({ message, stack }, null, 2)}`
+              });
             }
           });
         })();
@@ -183,20 +204,7 @@ export default class EchoBot extends ActivityHandler {
       for (let cnt = 0; cnt < membersAdded.length; ++cnt) {
         if (membersAdded[cnt].id !== context.activity.recipient.id) {
           await context.sendActivity({
-            suggestedActions: {
-              to: [],
-              actions: [
-                {
-                  type: 'imBack',
-                  value: 'Give me a sample Markdown text.'
-                },
-                {
-                  text: '1',
-                  title: 'Say A to Z.',
-                  type: 'messageBack'
-                }
-              ]
-            },
+            suggestedActions: SUGGESTED_ACTIONS,
             text: welcomeText
           });
         }
