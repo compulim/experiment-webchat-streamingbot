@@ -68,7 +68,7 @@ jobs:
         name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
         with:
-          app-name: 'webchat-relaybot'
+          app-name: webchat-streamingbot
           slot-name: production
           publish-profile: ${{ secrets.PUBLISH_PROFILE }}
           package: zipdeploy.zip
