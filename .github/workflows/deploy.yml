@@ -23,9 +23,10 @@ jobs:
       - uses: actions/checkout@main
 
       - name: Set up Node.js version
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          cache: npm
+          node-version: '20'
 
       - run: npm clean-install
       - continue-on-error: true
@@ -34,11 +35,11 @@ jobs:
       - run: npm test --if-present --workspaces
       - run: zip -1r zipdeploy.zip .
         working-directory: ./packages/bot/
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: bot
           path: ./packages/bot/zipdeploy.zip
-      - uses: actions/upload-pages-artifact@v1
+      - uses: actions/upload-pages-artifact@v2
         with:
           path: ./packages/pages/public
 
@@ -52,13 +53,13 @@ jobs:
 
     steps:
       - name: Download artifact
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: bot
 
       - id: deploy
         name: Deploy to Azure Web App
-        uses: azure/webapps-deploy@v2
+        uses: azure/webapps-deploy@v3
         with:
           app-name: webchat-streamingbot
           slot-name: production
@@ -88,4 +89,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v1
+        uses: actions/deploy-pages@v2
