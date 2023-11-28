@@ -147,7 +147,7 @@ export default class EchoBot extends ActivityHandler {
               }
 
               const stream = res.body.pipeThrough(new TextDecoderStream()).pipeThrough(new EventSourceParserStream());
-              const final = [text];
+              const final = [];
 
               for await (const { data, type } of stream) {
                 if (type !== 'event') {
@@ -177,7 +177,8 @@ export default class EchoBot extends ActivityHandler {
 
     this.onMembersAdded(async (context, next) => {
       const membersAdded = context.activity.membersAdded;
-      const welcomeText = 'Hello and welcome!';
+      const welcomeText =
+        'Hello and welcome!\n\nThis is a bot for experimenting UI features. Do not use it for production.';
 
       for (let cnt = 0; cnt < membersAdded.length; ++cnt) {
         if (membersAdded[cnt].id !== context.activity.recipient.id) {
