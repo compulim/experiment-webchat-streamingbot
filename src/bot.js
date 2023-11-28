@@ -2,9 +2,13 @@
 // Licensed under the MIT License.
 
 import { ActivityHandler, MessageFactory, TurnContext } from 'botbuilder';
+import { EventSourceParserStream } from 'eventsource-parser/stream';
+import Limiter from '../node_modules/limiter/dist/cjs/index.js';
 
 import createBotFrameworkAdapter from './createBotFrameworkAdapter.js';
 import sleep from './utils/sleep.js';
+
+const gptLimiter = new Limiter.RateLimiter({ tokensPerInterval: 10, interval: 'minute' });
 
 const CHUNK_INTERVAL = 10;
 const TOKENS =
@@ -106,6 +110,66 @@ export default class EchoBot extends ActivityHandler {
 
             // await context.updateActivity({ id, text: TOKENS, type: 'messageUpdate' });
             await context.sendActivity({ id, text: TOKENS, type: 'messageUpdate' });
+          });
+        })();
+      } else {
+        if (!(await gptLimiter.tryRemoveTokens(1))) {
+          return await context.sendActivity(
+            MessageFactory.text('Too many requests to Azure OpenAI, please try again later.')
+          );
+        }
+
+        await context.sendActivity(MessageFactory.text('Sending to Azure OpenAI'));
+
+        (async function () {
+          const adapter = await createBotFrameworkAdapter();
+
+          await adapter.continueConversation(conversationReference, async context => {
+            try {
+              const res = await fetch(
+                `https://openai-pva.openai.azure.com/openai/deployments/${process.env.AZURE_OPEN_AI_DEPLOYMENT_NAME}/completions?api-version=2023-05-15`,
+                {
+                  body: JSON.stringify({
+                    max_tokens: 100,
+                    prompt: text,
+                    stream: true
+                  }),
+                  headers: {
+                    'api-key': process.env.AZURE_OPEN_AI_KEY,
+                    'content-type': 'application/json'
+                  },
+                  method: 'POST'
+                }
+              );
+
+              if (!res.ok) {
+                return await context.sendActivity(`Failed to call completion API.\n\n${await res.statusText()}`);
+              }
+
+              const stream = res.body.pipeThrough(new TextDecoderStream()).pipeThrough(new EventSourceParserStream());
+              const final = [text];
+
+              for await (const { data, type } of stream) {
+                if (type !== 'event') {
+                  continue;
+                } else if (data === '[DONE]') {
+                  break;
+                }
+
+                const [{ text }] = JSON.parse(data).choices;
+
+                final.push(text);
+                await context.sendActivity({
+                  channelData: { 'azure-openai-data': data },
+                  text: final.join(''),
+                  type: 'typing'
+                });
+              }
+
+              await context.sendActivity(final.join(''));
+            } catch ({ message, stack }) {
+              await context.sendActivity(`Bot failed:\n\n${JSON.stringify({ message, stack }, null, 2)}`);
+            }
           });
         })();
       }

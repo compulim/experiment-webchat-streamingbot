@@ -15,7 +15,7 @@ async function main() {
   const server = createServer();
 
   server.listen(process.env.port || process.env.PORT || 3978, () => {
-    console.log(`\n${server.name} listening to ${server.address()}`);
+    console.log(`\n${server.name} listening to ${JSON.stringify(server.address())}`);
     console.log('\nGet Bot Framework Emulator: https://aka.ms/botframework-emulator');
     console.log('\nTo talk to your bot, open the emulator select "Open Bot"');
   });
