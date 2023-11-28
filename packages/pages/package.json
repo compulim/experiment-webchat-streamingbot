@@ -1,0 +1,35 @@
+{
+  "name": "pages",
+  "version": "0.0.0-0",
+  "description": "",
+  "author": "William Wong",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "build": "esbuild --bundle --entry-names=[ext]/[name] --jsx=automatic --minify --outdir=./public/static/ --sourcemap app=./src/app/index.tsx",
+    "bump": "npm run bump:prod && npm run bump:dev",
+    "bump:dev": "if [ `cat package.json | jq -r '.devDependencies | length'` -ne 0 ]; then npm install $BUMP_DEV_OPTIONS $(cat package.json | jq -r '(.pinDependencies // {}) as $p | ((.devDependencies // {}) | keys) | map(. + \"@\" + ($p[.] // [\"latest\"])[0]) | .[]'); fi",
+    "bump:prod": "if [ `cat package.json | jq -r '.dependencies | length'` -ne 0 ]; then npm install $BUMP_PROD_OPTIONS $(cat package.json | jq -r '(.pinDependencies // {}) as $p | ((.dependencies // {}) | keys) | map(. + \"@\" + ($p[.] // [\"latest\"])[0]) | .[]'); fi",
+    "eslint": "npm run precommit",
+    "precommit": "npm run precommit:eslint && npm run precommit:typescript",
+    "precommit:eslint": "eslint ./src/",
+    "precommit:typescript": "tsc --project ./src/tsconfig.json",
+    "start": "npm run build -- --servedir=./public"
+  },
+  "devDependencies": {
+    "@tsconfig/strictest": "^2.0.2",
+    "@types/react": "^18.2.39",
+    "@types/react-dom": "^18.2.17",
+    "@typescript-eslint/eslint-plugin": "^6.13.1",
+    "@typescript-eslint/parser": "^6.13.1",
+    "esbuild": "^0.19.8",
+    "eslint": "^8.54.0",
+    "eslint-plugin-prettier": "^5.0.1",
+    "eslint-plugin-react": "^7.33.2",
+    "typescript": "^5.3.2"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  }
+}

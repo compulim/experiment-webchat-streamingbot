@@ -38,6 +38,9 @@ jobs:
         with:
           name: bot
           path: ./packages/bot/zipdeploy.zip
+      - uses: actions/upload-pages-artifact@v1
+        with:
+          path: ./packages/pages/public
 
   azure-deploy:
     environment:
@@ -68,3 +71,21 @@ jobs:
           sleep 5
           curl -s ${{ steps.deploy.outputs.webapp-url }}/health.txt
           curl -s ${{ steps.deploy.outputs.webapp-url }}/ready.txt
+
+  pages-deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    name: Deploy
+    needs:
+      - build
+    runs-on: ubuntu-latest
+    # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v1
