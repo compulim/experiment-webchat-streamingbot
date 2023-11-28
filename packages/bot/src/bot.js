@@ -187,13 +187,13 @@ export default class EchoBot extends ActivityHandler {
               to: [],
               actions: [
                 {
-                  title: 'Give me a sample Markdown text.',
-                  type: 'imBack'
+                  type: 'imBack',
+                  value: 'Give me a sample Markdown text.'
                 },
                 {
+                  text: '1',
                   title: 'Say A to Z.',
-                  type: 'messageBack',
-                  value: '1'
+                  type: 'messageBack'
                 }
               ]
             },
