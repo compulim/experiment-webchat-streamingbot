@@ -8,7 +8,7 @@ import Limiter from '../node_modules/limiter/dist/cjs/index.js';
 import createBotFrameworkAdapter from './createBotFrameworkAdapter.js';
 import sleep from './utils/sleep.js';
 
-const gptLimiter = new Limiter.RateLimiter({ tokensPerInterval: 10, interval: 'minute' });
+const gptLimiter = new Limiter.RateLimiter({ tokensPerInterval: 5, interval: 'minute' });
 
 const CHUNK_INTERVAL = 10;
 const TOKENS =
@@ -130,7 +130,7 @@ export default class EchoBot extends ActivityHandler {
                 `https://openai-pva.openai.azure.com/openai/deployments/${process.env.AZURE_OPEN_AI_DEPLOYMENT_NAME}/completions?api-version=2023-05-15`,
                 {
                   body: JSON.stringify({
-                    max_tokens: 100,
+                    max_tokens: 1000,
                     prompt: text,
                     stream: true
                   }),
