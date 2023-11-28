@@ -182,7 +182,23 @@ export default class EchoBot extends ActivityHandler {
 
       for (let cnt = 0; cnt < membersAdded.length; ++cnt) {
         if (membersAdded[cnt].id !== context.activity.recipient.id) {
-          await context.sendActivity(MessageFactory.text(welcomeText, welcomeText));
+          await context.sendActivity({
+            suggestedActions: {
+              to: [],
+              actions: [
+                {
+                  title: 'Give me a sample Markdown text.',
+                  type: 'imBack'
+                },
+                {
+                  title: 'Say A to Z.',
+                  type: 'messageBack',
+                  value: '1'
+                }
+              ]
+            },
+            text: welcomeText
+          });
         }
       }
 
