@@ -42,15 +42,6 @@ export default class EchoBot extends ActivityHandler {
 
       console.log(`Received: ${text}`);
 
-      if (text !== '1' && text !== '2') {
-        const replyText = `Echo: ${text}`;
-
-        await context.sendActivity(MessageFactory.text(replyText, replyText));
-
-        // By calling next() you ensure that the next BotHandler is run.
-        await next();
-      }
-
       if (text === '1') {
         await context.sendActivity(MessageFactory.text('Sending as "typing" activity with overlap'));
 
@@ -134,7 +125,10 @@ export default class EchoBot extends ActivityHandler {
           );
         }
 
-        await context.sendActivity(MessageFactory.text('Sending to Azure OpenAI'));
+        await context.sendActivity(MessageFactory.text(`Sending "${text}" to Azure OpenAI.`));
+
+        // By calling next() you ensure that the next BotHandler is run.
+        await next();
 
         (async function () {
           const adapter = await createBotFrameworkAdapter();
