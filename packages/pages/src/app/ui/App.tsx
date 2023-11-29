@@ -2,6 +2,7 @@ import './App.css';
 
 import { memo, useEffect, useRef } from 'react';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const { createDirectLine, renderWebChat } = (window as any)['WebChat'];
 
 export default memo(function App() {
