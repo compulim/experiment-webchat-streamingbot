@@ -2,10 +2,10 @@ import './App.css';
 
 import { memo, useEffect, useRef } from 'react';
 
-const { createDirectLine, renderWebChat } = window['WebChat'];
+const { createDirectLine, renderWebChat } = (window as any)['WebChat'];
 
 export default memo(function App() {
-  const divRef = useRef<HTMLDivElement>();
+  const divRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const abortController = new AbortController();
