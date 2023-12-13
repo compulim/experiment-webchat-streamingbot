@@ -183,6 +183,57 @@ export default class EchoBot extends ActivityHandler {
 
         // By calling next() you ensure that the next BotHandler is run.
         await next();
+      } else if (text === 'csat2') {
+        await context.sendActivity(MessageFactory.text('Sending CSAT as Adaptive Cards actions'));
+        await context.sendActivity({
+          attachments: [
+            {
+              content: {
+                type: 'AdaptiveCard',
+                body: [
+                  {
+                    type: 'TextBlock',
+                    text: 'Great! Please rate your experience.'
+                  }
+                ],
+                actions: [
+                  {
+                    data: 5,
+                    title: 'Excellent',
+                    type: 'Action.Submit'
+                  },
+                  {
+                    data: 4,
+                    title: 'Great',
+                    type: 'Action.Submit'
+                  },
+                  {
+                    data: 3,
+                    title: 'Good',
+                    type: 'Action.Submit'
+                  },
+                  {
+                    data: 2,
+                    title: 'Poor',
+                    type: 'Action.Submit'
+                  },
+                  {
+                    data: 1,
+                    title: 'Bad',
+                    type: 'Action.Submit'
+                  }
+                ],
+                $schema: 'http://adaptivecards.io/schemas/adaptive-card.json',
+                version: '1.5'
+              },
+              contentType: 'application/vnd.microsoft.card.adaptive'
+            }
+          ],
+          type: 'message'
+        });
+
+        // By calling next() you ensure that the next BotHandler is run.
+        await next();
       } else {
         if (!(await gptLimiter.tryRemoveTokens(1))) {
           return await context.sendActivity(
