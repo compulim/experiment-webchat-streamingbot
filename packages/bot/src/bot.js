@@ -18,7 +18,7 @@ const SUGGESTED_ACTIONS = {
   to: [],
   actions: [
     {
-      title: 'Give me a sample Markdown text.', // Telegram requires "title" field.
+      title: 'Give me a sample Markdown text.', // Telegram channel adapter requires "title" field, otherwise, will throw "Bad Request: can't parse keyboard button: Can't find field "text"".
       type: 'imBack',
       value: 'Give me a sample Markdown text.' // Web Chat requires "value" field.
     },
