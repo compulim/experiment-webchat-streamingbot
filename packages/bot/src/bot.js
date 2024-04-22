@@ -52,6 +52,8 @@ export default class EchoBot extends ActivityHandler {
       if (text === '1') {
         await context.sendActivity(MessageFactory.text('Sending as "typing" activity with overlap'));
 
+        const { id: streamId } = await context.sendActivity({ type: 'typing' });
+
         // By calling next() you ensure that the next BotHandler is run.
         await next();
 
@@ -66,21 +68,29 @@ export default class EchoBot extends ActivityHandler {
               const text = TOKENS.substring(0, match.index);
 
               if (id) {
-                // await context.updateActivity({ id, text, type: 'typing' });
-                await context.sendActivity({ id, text, type: 'typing' });
+                // await context.updateActivity({ channelData: { streamId }, id, text, type: 'typing' });
+                await context.sendActivity({ channelData: { streamId }, id, text, type: 'typing' });
               } else {
-                ({ id } = await context.sendActivity({ text, type: 'typing' }));
+                ({ id } = await context.sendActivity({ channelData: { streamId }, text, type: 'typing' }));
               }
 
               await sleep(CHUNK_INTERVAL);
             }
 
-            // await context.updateActivity({ id, text: TOKENS, type: 'message' });
-            await context.sendActivity({ id, suggestedActions: SUGGESTED_ACTIONS, text: TOKENS, type: 'message' });
+            // await context.updateActivity({ channelData: { streamId }, id, text: TOKENS, type: 'message' });
+            await context.sendActivity({
+              channelData: { streamId },
+              id,
+              suggestedActions: SUGGESTED_ACTIONS,
+              text: TOKENS,
+              type: 'message'
+            });
           });
         })();
       } else if (text === '2') {
         await context.sendActivity(MessageFactory.text('Sending as "typing" activity without overlap'));
+
+        const { id: streamId } = await context.sendActivity({ type: 'typing' });
 
         // By calling next() you ensure that the next BotHandler is run.
         await next();
@@ -93,21 +103,23 @@ export default class EchoBot extends ActivityHandler {
 
             for (const text of TOKENS.split(/\s/gu)) {
               if (id) {
-                await context.updateActivity({ id, text, type: 'typing' });
-                // await context.sendActivity({ id, text, type: 'typing' });
+                await context.updateActivity({ channelData: { streamId }, id, text, type: 'typing' });
+                // await context.sendActivity({ channelData: { streamId }, id, text, type: 'typing' });
               } else {
-                ({ id } = await context.sendActivity({ text, type: 'typing' }));
+                ({ id } = await context.sendActivity({ channelData: { streamId }, text, type: 'typing' }));
               }
 
               await sleep(CHUNK_INTERVAL);
             }
 
-            await context.updateActivity({ id, text: TOKENS, type: 'message' });
-            // await context.sendActivity({ id, text: TOKENS, type: 'message' });
+            await context.updateActivity({ channelData: { streamId }, id, text: TOKENS, type: 'message' });
+            // await context.sendActivity({ channelData: { streamId },id, text: TOKENS, type: 'message' });
           });
         })();
       } else if (text === '3') {
         await context.sendActivity(MessageFactory.text('Sending as "messageUpdate" activity'));
+
+        const { id: streamId } = await context.sendActivity({ type: 'typing' });
 
         // By calling next() you ensure that the next BotHandler is run.
         await next();
@@ -121,17 +133,72 @@ export default class EchoBot extends ActivityHandler {
 
             while ((match = pattern.exec(TOKENS))) {
               if (id) {
-                // await context.updateActivity({ id, text: TOKENS.substring(0, match.index), type: 'messageUpdate' });
-                await context.sendActivity({ id, text: TOKENS.substring(0, match.index), type: 'messageUpdate' });
+                // await context.updateActivity({ channelData: { streamId }, id, text: TOKENS.substring(0, match.index), type: 'messageUpdate' });
+                await context.sendActivity({
+                  channelData: { streamId },
+                  id,
+                  text: TOKENS.substring(0, match.index),
+                  type: 'messageUpdate'
+                });
               } else {
-                ({ id } = await context.sendActivity({ text: TOKENS.substring(0, match.index), type: 'message' }));
+                ({ id } = await context.sendActivity({
+                  channelData: { streamId },
+                  text: TOKENS.substring(0, match.index),
+                  type: 'message'
+                }));
               }
 
               await sleep(CHUNK_INTERVAL);
             }
 
             // await context.updateActivity({ id, text: TOKENS, type: 'messageUpdate' });
-            await context.sendActivity({ id, text: TOKENS, type: 'messageUpdate' });
+            await context.sendActivity({ channelData: { streamId }, id, text: TOKENS, type: 'messageUpdate' });
+          });
+        })();
+      } else if (text === '4') {
+        await context.sendActivity(MessageFactory.text('Sending as 2 simultaneous "typing" activity'));
+
+        const { id: streamId1 } = await context.sendActivity({ type: 'typing' });
+        const { id: streamId2 } = await context.sendActivity({ type: 'typing' });
+
+        // By calling next() you ensure that the next BotHandler is run.
+        await next();
+
+        (async function () {
+          const adapter = await createBotFrameworkAdapter();
+
+          await adapter.continueConversation(conversationReference, async context => {
+            let match,
+              pattern = /\s/gu;
+
+            while ((match = pattern.exec(TOKENS))) {
+              const text = TOKENS.substring(0, match.index);
+
+              await context.sendActivity({ channelData: { streamId: streamId1 }, text, type: 'typing' });
+
+              await sleep(CHUNK_INTERVAL);
+            }
+
+            await context.sendActivity({ channelData: { streamId: streamId1 }, text: TOKENS, type: 'message' });
+          });
+        })();
+
+        (async function () {
+          const adapter = await createBotFrameworkAdapter();
+
+          await adapter.continueConversation(conversationReference, async context => {
+            let match,
+              pattern = /\s/gu;
+
+            while ((match = pattern.exec(TOKENS))) {
+              const text = TOKENS.substring(0, match.index);
+
+              await context.sendActivity({ channelData: { streamId: streamId2 }, text, type: 'typing' });
+
+              await sleep(CHUNK_INTERVAL);
+            }
+
+            await context.sendActivity({ channelData: { streamId: streamId2 }, text: TOKENS, type: 'message' });
           });
         })();
       } else if (text === 'csat') {
@@ -298,7 +365,7 @@ export default class EchoBot extends ActivityHandler {
           );
         }
 
-        await context.sendActivity(MessageFactory.text(`Sending "${text}" to Azure OpenAI.`));
+        const { id: streamId } = await context.sendActivity(MessageFactory.text(`Sending "${text}" to Azure OpenAI.`));
 
         // By calling next() you ensure that the next BotHandler is run.
         await next();
@@ -343,15 +410,22 @@ export default class EchoBot extends ActivityHandler {
                 final.push(text);
 
                 await context.sendActivity({
-                  channelData: { 'azure-openai-data': data },
+                  // channelData: { 'azure-openai-data': data, streamId },
+                  channelData: { streamId },
                   text: final.join(''),
                   type: 'typing'
                 });
               }
 
               await context.sendActivity({
+                channelData: { streamId },
+                text: final.join(''),
+                type: 'message'
+              });
+
+              await context.sendActivity({
                 suggestedActions: SUGGESTED_ACTIONS,
-                text: final.join('')
+                type: 'message'
               });
             } catch ({ message, stack }) {
               await context.sendActivity({
