@@ -100,7 +100,7 @@ export default class DirectToEngineBotAdapter extends BotAdapter {
     req: { body?: any; params?: any },
     res: {
       end: () => void;
-      socket: { setNoDelay: (noDelay?: boolean | undefined) => void } | null;
+      socket?: { setNoDelay: (noDelay?: boolean | undefined) => void } | null;
       setHeader: (name: string, value: string | number | readonly string[]) => void;
       write: (chunk: any) => void;
       status: (code: number) => void;
