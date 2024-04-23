@@ -9,6 +9,7 @@ import createBotFrameworkAdapter from './createBotFrameworkAdapter.js';
 import sleep from './utils/sleep.js';
 
 const gptLimiter = new Limiter.RateLimiter({ tokensPerInterval: 5, interval: 'minute' });
+const tokenLimiter = new Limiter.RateLimiter({ tokensPerInterval: 1, interval: 5 });
 
 const CHUNK_INTERVAL = 20;
 const TOKENS =
@@ -428,6 +429,8 @@ export default class EchoBot extends ActivityHandler {
                 const [{ text }] = JSON.parse(data).choices;
 
                 final.push(text);
+
+                await tokenLimiter.removeTokens(1);
 
                 await context.sendActivity({
                   // channelData: { 'azure-openai-data': data, streamId },
