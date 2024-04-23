@@ -28,13 +28,13 @@ jobs:
           cache: npm
           node-version: '18'
 
-      - run: npm clean-install --install-strategy=linked
+      - run: npm clean-install
       - continue-on-error: true
         run: npm run precommit --if-present --workspaces
       - run: npm run build --if-present --workspaces
       - run: npm test --if-present --workspaces
       - run: zip -1r zipdeploy.zip .
-        working-directory: ./packages/bot/
+        # working-directory: ./packages/bot/
       - uses: actions/upload-artifact@v4
         with:
           name: bot

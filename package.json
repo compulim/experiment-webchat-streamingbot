@@ -5,6 +5,8 @@
   "private": true,
   "author": "William Wong",
   "license": "MIT",
+  "type": "module",
+  "main": "./packages/bot/src/index.js",
   "workspaces": [
     "packages/direct-to-engine-bot-adapter",
     "packages/bot",
