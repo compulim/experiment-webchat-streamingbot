@@ -382,7 +382,9 @@ export default class EchoBot extends ActivityHandler {
           );
         }
 
-        const { id: streamId } = await context.sendActivity(MessageFactory.text(`Sending "${text}" to Azure OpenAI.`));
+        await context.sendActivity(MessageFactory.text(`Sending "${text}" to Azure OpenAI.`));
+
+        const { id: streamId } = await context.sendActivity({ type: 'typing' });
 
         // Quirks: We need to somehow tell the adapter don't close the connection.
         'willContinue' in context.adapter && context.adapter.willContinue(context);
