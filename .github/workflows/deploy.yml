@@ -37,8 +37,10 @@ jobs:
         # working-directory: ./packages/bot/
       - uses: actions/upload-artifact@v4
         with:
+          compression-level: 0
           name: bot
           path: ./zipdeploy.zip
+          retention-days: 1
       - uses: actions/upload-pages-artifact@v3
         with:
           path: ./packages/pages/public
