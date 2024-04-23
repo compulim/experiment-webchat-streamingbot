@@ -3,12 +3,13 @@
 
 import './env.js';
 
-import { createServer } from 'restify';
+import { DirectToEngineBotAdapter } from 'direct-to-engine-bot-adapter';
 import { platform } from 'os';
+import { createServer } from 'restify';
 
-import createBotFrameworkAdapter from './createBotFrameworkAdapter.js';
-import EchoBot from './bot.js';
 import setupAPI from './api/index.js';
+import EchoBot from './bot.js';
+import createBotFrameworkAdapter from './createBotFrameworkAdapter.js';
 
 async function main() {
   // Create HTTP server
@@ -32,6 +33,8 @@ async function main() {
   // See https://docs.microsoft.com/en-us/azure/bot-service/bot-service-channel-directline-extension-node-bot?view=azure-bot-service-4.0
   platform() === 'win32' &&
     adapter.useNamedPipe(context => bot.run(context), `${process.env.APPSETTING_WEBSITE_SITE_NAME}.directline`);
+
+  new DirectToEngineBotAdapter({ bot, port: 3980 });
 }
 
 main();

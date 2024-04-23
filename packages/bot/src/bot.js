@@ -10,7 +10,7 @@ import sleep from './utils/sleep.js';
 
 const gptLimiter = new Limiter.RateLimiter({ tokensPerInterval: 5, interval: 'minute' });
 
-const CHUNK_INTERVAL = 10;
+const CHUNK_INTERVAL = 20;
 const TOKENS =
   'Alfa Bravo Charlie Delta Echo Foxtrot Golf Hotel India Juliett Kilo Lima Mike November Oscar Papa Quebec Romeo Sierra Tango Uniform Victor Whiskey Xray Yankee Zulu';
 
@@ -54,11 +54,15 @@ export default class EchoBot extends ActivityHandler {
 
         const { id: streamId } = await context.sendActivity({ type: 'typing' });
 
-        // By calling next() you ensure that the next BotHandler is run.
+        // Quirks: We need to somehow tell the adapter don't close the connection.
+        'willContinue' in context.adapter && context.adapter.willContinue(context);
+
+        // By calling next, we will acknowledge the message sent from the user.
         await next();
 
         (async function () {
-          const adapter = await createBotFrameworkAdapter();
+          const { adapter } = context;
+          // const adapter = await createBotFrameworkAdapter();
 
           await adapter.continueConversation(conversationReference, async context => {
             let id, match;
@@ -92,11 +96,15 @@ export default class EchoBot extends ActivityHandler {
 
         const { id: streamId } = await context.sendActivity({ type: 'typing' });
 
+        // Quirks: We need to somehow tell the adapter don't close the connection.
+        'willContinue' in context.adapter && context.adapter.willContinue(context);
+
         // By calling next() you ensure that the next BotHandler is run.
         await next();
 
         (async function () {
-          const adapter = await createBotFrameworkAdapter();
+          // const adapter = await createBotFrameworkAdapter();
+          const { adapter } = context;
 
           await adapter.continueConversation(conversationReference, async context => {
             let id;
@@ -121,11 +129,15 @@ export default class EchoBot extends ActivityHandler {
 
         const { id: streamId } = await context.sendActivity({ type: 'typing' });
 
+        // Quirks: We need to somehow tell the adapter don't close the connection.
+        'willContinue' in context.adapter && context.adapter.willContinue(context);
+
         // By calling next() you ensure that the next BotHandler is run.
         await next();
 
         (async function () {
-          const adapter = await createBotFrameworkAdapter();
+          const { adapter } = context;
+          // const adapter = await createBotFrameworkAdapter();
 
           await adapter.continueConversation(conversationReference, async context => {
             let id, match;
@@ -161,11 +173,15 @@ export default class EchoBot extends ActivityHandler {
         const { id: streamId1 } = await context.sendActivity({ type: 'typing' });
         const { id: streamId2 } = await context.sendActivity({ type: 'typing' });
 
+        // Quirks: We need to somehow tell the adapter don't close the connection.
+        'willContinue' in context.adapter && context.adapter.willContinue(context);
+
         // By calling next() you ensure that the next BotHandler is run.
         await next();
 
         (async function () {
-          const adapter = await createBotFrameworkAdapter();
+          const { adapter } = context;
+          // const adapter = await createBotFrameworkAdapter();
 
           await adapter.continueConversation(conversationReference, async context => {
             let match,
@@ -367,11 +383,15 @@ export default class EchoBot extends ActivityHandler {
 
         const { id: streamId } = await context.sendActivity(MessageFactory.text(`Sending "${text}" to Azure OpenAI.`));
 
+        // Quirks: We need to somehow tell the adapter don't close the connection.
+        'willContinue' in context.adapter && context.adapter.willContinue(context);
+
         // By calling next() you ensure that the next BotHandler is run.
         await next();
 
         (async function () {
-          const adapter = await createBotFrameworkAdapter();
+          const { adapter } = context;
+          // const adapter = await createBotFrameworkAdapter();
 
           await adapter.continueConversation(conversationReference, async context => {
             try {
