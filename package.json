@@ -6,7 +6,7 @@
   "author": "William Wong",
   "license": "MIT",
   "workspaces": [
-    "packages/directToEngineBotAdapter",
+    "packages/direct-to-engine-bot-adapter",
     "packages/bot",
     "packages/pages"
   ]
