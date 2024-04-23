@@ -7,9 +7,9 @@ import {
   type ConversationReference,
   type ResourceResponse
 } from 'botbuilder';
-import cors from 'cors';
-import Express from 'express';
+import express from 'express';
 import createDeferred, { type DeferredPromise } from 'p-defer';
+import { type Router as RestifyRouter } from 'restify';
 import { parse } from 'valibot';
 import executeTurnRequestBodySchema from './executeTurnRequestBody';
 
@@ -41,77 +41,9 @@ export default class DirectToEngineBotAdapter extends BotAdapter {
 
     this.#botMiddleware = bot.run.bind(bot);
     this.#port = port;
-
-    this.#app = Express();
-
-    this.#app.use(cors());
-    this.#app.use(Express.json());
-
-    this.#app.post('/environments/:environmentId/bots/:botId/test/conversations', async (_, res) => {
-      const conversationId = this.#nextConversationId();
-      let context: TurnContext | undefined;
-
-      res.contentType('text/event-stream');
-
-      try {
-        await this.#run(
-          conversationId,
-          {
-            membersAdded: [{ id: 'user', name: 'User', role: 'user' }],
-            type: 'conversationUpdate'
-          },
-          async (...activities) => {
-            for (const activity of activities) {
-              // TODO: Rename the event name
-              res.write(`event: activity\ndata: ${JSON.stringify(activity)}\n\n`);
-            }
-          }
-        );
-
-        res.write('event: end\ndata: end\n\n');
-      } catch (error) {
-        context && this.onTurnError(context, error instanceof Error ? error : new Error(error + ''));
-
-        res.status(500);
-      }
-    });
-
-    this.#app.post('/environments/:environmentId/bots/:botId/test/conversations/:conversationId', async (req, res) => {
-      res.socket?.setNoDelay(true);
-      console.log(res.socket);
-
-      const {
-        params: { conversationId }
-      } = req;
-
-      let context: TurnContext | undefined;
-
-      try {
-        const { activity } = parse(executeTurnRequestBodySchema, req.body);
-
-        res.contentType('text/event-stream');
-
-        await this.#run(conversationId, activity, async (...activities) => {
-          // TODO: Rename the event name
-          for (const activity of activities) {
-            console.log(new Date());
-            res.write(`event: activity\ndata: ${JSON.stringify(activity)}\n\n`);
-          }
-        });
-
-        res.write('event: end\ndata: end\n\n');
-      } catch (error) {
-        context && this.onTurnError(context, error instanceof Error ? error : new Error(error + ''));
-
-        res.status(500);
-      }
-    });
-
-    this.#app.listen(port, () => console.log(`Direct-to-Engine bot adapter listening to port ${port}.`));
   }
 
   #activeSession: Map<string, HalfDuplexSession> = new Map();
-  #app: ReturnType<typeof Express>;
   #botMiddleware: BotMiddleware;
   #currentActivityIdNumber: number = 0;
   #currentConversationIdNumber: number = 0;
@@ -123,6 +55,134 @@ export default class DirectToEngineBotAdapter extends BotAdapter {
 
   #nextConversationId(): string {
     return `c-${++this.#currentConversationIdNumber}`;
+  }
+
+  async #handleStartConversation(
+    _: any,
+    res: {
+      end: () => void;
+      setHeader: (name: string, value: string | number | readonly string[]) => void;
+      write: (chunk: any) => void;
+      status: (code: number) => void;
+    }
+  ): Promise<void> {
+    const conversationId = this.#nextConversationId();
+    let context: TurnContext | undefined;
+
+    try {
+      res.setHeader('content-type', 'text/event-stream');
+
+      await this.#run(
+        conversationId,
+        {
+          membersAdded: [{ id: 'user', name: 'User', role: 'user' }],
+          type: 'conversationUpdate'
+        },
+        async (...activities) => {
+          for (const activity of activities) {
+            // TODO: Rename the event name
+            res.write(`event: activity\ndata: ${JSON.stringify(activity)}\n\n`);
+          }
+        }
+      );
+
+      res.write('event: end\ndata: end\n\n');
+      res.end();
+    } catch (error) {
+      console.error(error);
+      context && this.onTurnError(context, error instanceof Error ? error : new Error(error + ''));
+
+      res.status(500);
+    }
+  }
+
+  async #handlePostActivity(
+    req: { body?: any; params?: any },
+    res: {
+      end: () => void;
+      socket: { setNoDelay: (noDelay?: boolean | undefined) => void } | null;
+      setHeader: (name: string, value: string | number | readonly string[]) => void;
+      write: (chunk: any) => void;
+      status: (code: number) => void;
+    }
+  ): Promise<void> {
+    res.socket?.setNoDelay(true);
+
+    const {
+      params: { conversationId }
+    } = req;
+
+    let context: TurnContext | undefined;
+
+    try {
+      const { activity } = parse(executeTurnRequestBodySchema, req.body);
+
+      res.setHeader('content-type', 'text/event-stream');
+
+      await this.#run(conversationId, activity, async (...activities) => {
+        for (const activity of activities) {
+          res.write(`event: activity\ndata: ${JSON.stringify(activity)}\n\n`);
+        }
+      });
+
+      res.write('event: end\ndata: end\n\n');
+      res.end();
+    } catch (error) {
+      console.error(error);
+      context && this.onTurnError(context, error instanceof Error ? error : new Error(error + ''));
+
+      res.status(500);
+    }
+  }
+
+  createExpressRouter(): express.Router {
+    const router = express.Router();
+
+    router.use(express.json());
+    router.post('/environments/:environmentId/bots/:botId/test/conversations', this.#handleStartConversation);
+    router.post(
+      '/environments/:environmentId/bots/:botId/test/conversations/:conversationId',
+      this.#handlePostActivity
+    );
+
+    return router;
+  }
+
+  mountOnRestify(router: RestifyRouter) {
+    router.mount(
+      {
+        method: 'OPTIONS',
+        name: 'cors:postActivity',
+        path: '/environments/:environmentId/bots/:botId/test/conversations/:conversationId'
+      },
+      [
+        (req, res, _next) => {
+          res.setHeader('access-control-allow-headers', 'authorization,content-type,x-ms-conversationid');
+          res.setHeader('access-control-allow-origin', req.headers.origin || '*');
+          res.setHeader('access-control-allow-methods', 'POST');
+          res.end();
+        }
+      ]
+    );
+
+    router.mount(
+      {
+        method: 'POST',
+        name: 'postActivity',
+        path: '/environments/:environmentId/bots/:botId/test/conversations/:conversationId'
+      },
+      [
+        (req, res, _next) => {
+          res.setHeader('access-control-allow-origin', req.headers.origin || '*');
+
+          if (req.params.conversationId) {
+            this.#handlePostActivity(req, res);
+          } else {
+            this.#handleStartConversation(req, res);
+          }
+        }
+      ]
+    );
   }
 
   async #run(

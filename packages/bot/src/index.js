@@ -5,7 +5,7 @@ import './env.js';
 
 import { DirectToEngineBotAdapter } from 'direct-to-engine-bot-adapter';
 import { platform } from 'os';
-import { createServer } from 'restify';
+import { createServer, plugins } from 'restify';
 
 import setupAPI from './api/index.js';
 import EchoBot from './bot.js';
@@ -34,7 +34,10 @@ async function main() {
   platform() === 'win32' &&
     adapter.useNamedPipe(context => bot.run(context), `${process.env.APPSETTING_WEBSITE_SITE_NAME}.directline`);
 
-  new DirectToEngineBotAdapter({ bot, port: 3980 });
+  const directToEngine = new DirectToEngineBotAdapter({ bot, port: 3980 });
+
+  server.use(plugins.jsonBodyParser());
+  directToEngine.mountOnRestify(server.router);
 }
 
 main();
