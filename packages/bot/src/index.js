@@ -4,6 +4,8 @@
 import './env.js';
 
 import { DirectToEngineBotAdapter } from 'direct-to-engine-bot-adapter';
+import cors from 'cors';
+import express from 'express';
 import { platform } from 'os';
 import { createServer, plugins } from 'restify';
 
@@ -37,7 +39,14 @@ async function main() {
   const directToEngine = new DirectToEngineBotAdapter({ bot, port: 3980 });
 
   server.use(plugins.jsonBodyParser());
-  directToEngine.mountOnRestify(server.router);
+  directToEngine.mountOnRestify(server.router); // Currently not working and fail with 404.
+
+  const app = express();
+
+  app.use(cors());
+  app.use(directToEngine.createExpressRouter());
+
+  app.listen(3980);
 }
 
 main();

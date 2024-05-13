@@ -8,6 +8,7 @@ import {
   type ResourceResponse
 } from 'botbuilder';
 import express from 'express';
+import { type IncomingHttpHeaders } from 'node:http';
 import createDeferred, { type DeferredPromise } from 'p-defer';
 import { type Router as RestifyRouter } from 'restify';
 import { parse } from 'valibot';
@@ -17,7 +18,6 @@ export type BotMiddleware = Parameters<BotAdapter['runMiddleware']>[1];
 
 export type DirectToEngineBotAdapterInit = {
   bot: ActivityHandler;
-  port: number;
 };
 
 type HalfDuplexSession = {
@@ -36,18 +36,16 @@ function createConversationAccount(conversationId: string): ConversationAccount 
 }
 
 export default class DirectToEngineBotAdapter extends BotAdapter {
-  constructor({ bot, port }: DirectToEngineBotAdapterInit) {
+  constructor({ bot }: DirectToEngineBotAdapterInit) {
     super();
 
     this.#botMiddleware = bot.run.bind(bot);
-    this.#port = port;
   }
 
   #activeSession: Map<string, HalfDuplexSession> = new Map();
   #botMiddleware: BotMiddleware;
   #currentActivityIdNumber: number = 0;
   #currentConversationIdNumber: number = 0;
-  #port: number;
 
   #nextActivityId(): string {
     return `a-${++this.#currentActivityIdNumber}`;
@@ -58,7 +56,7 @@ export default class DirectToEngineBotAdapter extends BotAdapter {
   }
 
   async #handleStartConversation(
-    _: any,
+    req: { headers: IncomingHttpHeaders },
     res: {
       end: () => void;
       setHeader: (name: string, value: string | number | readonly string[]) => void;
@@ -66,11 +64,19 @@ export default class DirectToEngineBotAdapter extends BotAdapter {
       status: (code: number) => void;
     }
   ): Promise<void> {
+    if (!/^text\/event-stream(;|$)/u.test(req.headers.accept || '')) {
+      res.status(400);
+      res.write('Must set Accept: text/event-stream.');
+
+      return res.end();
+    }
+
     const conversationId = this.#nextConversationId();
     let context: TurnContext | undefined;
 
     try {
       res.setHeader('content-type', 'text/event-stream');
+      res.setHeader('x-ms-conversationid', conversationId);
 
       await this.#run(
         conversationId,
@@ -80,7 +86,6 @@ export default class DirectToEngineBotAdapter extends BotAdapter {
         },
         async (...activities) => {
           for (const activity of activities) {
-            // TODO: Rename the event name
             res.write(`event: activity\ndata: ${JSON.stringify(activity)}\n\n`);
           }
         }
@@ -96,8 +101,8 @@ export default class DirectToEngineBotAdapter extends BotAdapter {
     }
   }
 
-  async #handlePostActivity(
-    req: { body?: any; params?: any },
+  async #handleExecuteTurn(
+    req: { body?: any; headers: IncomingHttpHeaders; params?: any },
     res: {
       end: () => void;
       socket?: { setNoDelay: (noDelay?: boolean | undefined) => void } | null;
@@ -106,6 +111,13 @@ export default class DirectToEngineBotAdapter extends BotAdapter {
       status: (code: number) => void;
     }
   ): Promise<void> {
+    if (!/^text\/event-stream(;|$)/u.test(req.headers.accept || '')) {
+      res.status(400);
+      res.write('Must set Accept: text/event-stream.');
+
+      return res.end();
+    }
+
     res.socket?.setNoDelay(true);
 
     const {
@@ -139,10 +151,13 @@ export default class DirectToEngineBotAdapter extends BotAdapter {
     const router = express.Router();
 
     router.use(express.json());
-    router.post('/environments/:environmentId/bots/:botId/test/conversations', this.#handleStartConversation);
+    router.post(
+      '/environments/:environmentId/bots/:botId/test/conversations',
+      this.#handleStartConversation.bind(this)
+    );
     router.post(
       '/environments/:environmentId/bots/:botId/test/conversations/:conversationId',
-      this.#handlePostActivity
+      this.#handleExecuteTurn.bind(this)
     );
 
     return router;
@@ -176,7 +191,7 @@ export default class DirectToEngineBotAdapter extends BotAdapter {
           res.setHeader('access-control-allow-origin', req.headers.origin || '*');
 
           if (req.params.conversationId) {
-            this.#handlePostActivity(req, res);
+            this.#handleExecuteTurn(req, res);
           } else {
             this.#handleStartConversation(req, res);
           }
@@ -197,7 +212,6 @@ export default class DirectToEngineBotAdapter extends BotAdapter {
       from: { id: 'user', name: 'User', role: 'user' },
       id: this.#nextActivityId(),
       recipient: { id: 'bot', name: 'Bot', role: 'bot' },
-      serviceUrl: `http://localhost:${this.#port}/`,
       timestamp: new Date()
     };
 
