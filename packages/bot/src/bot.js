@@ -3,9 +3,11 @@
 
 import { ActivityHandler, MessageFactory, TurnContext } from 'botbuilder';
 import { EventSourceParserStream } from 'eventsource-parser/stream';
+import YAML from 'json-to-pretty-yaml';
 import Limiter from '../node_modules/limiter/dist/cjs/index.js';
 
 import createBotFrameworkAdapter from './createBotFrameworkAdapter.js';
+import flightUpdateCard from './flightUpdateCard.js';
 import sleep from './utils/sleep.js';
 
 const gptLimiter = new Limiter.RateLimiter({ tokensPerInterval: 5, interval: 'minute' });
@@ -33,6 +35,11 @@ const SUGGESTED_ACTIONS = {
       title: 'Post',
       type: 'postBack',
       value: '1' // Telegram ignores "value" field despite this is "postBack".
+    },
+    {
+      title: 'Card',
+      type: 'imBack',
+      value: 'card'
     }
   ]
 };
@@ -375,6 +382,60 @@ export default class EchoBot extends ActivityHandler {
 
         // By calling next() you ensure that the next BotHandler is run.
         await next();
+      } else if (text === 'card') {
+        await context.sendActivity(MessageFactory.text('Constructing an Adaptive Cards...'));
+
+        const { id: streamId } = await context.sendActivity({ type: 'typing' });
+
+        // Quirks: We need to somehow tell the adapter don't close the connection.
+        'willContinue' in context.adapter && context.adapter.willContinue(context);
+
+        // By calling next, we will acknowledge the message sent from the user.
+        await next();
+
+        (async function () {
+          const { adapter } = context;
+          const content = YAML.stringify(flightUpdateCard());
+          const tokens = content.split('\n').map(line => line + '\n');
+          // const tokens = [];
+          // const TOKEN_SIZE = 5;
+
+          // for (const char of content.split('')) {
+          //   if ((tokens[tokens.length - 1]?.length ?? 0) >= TOKEN_SIZE) {
+          //     tokens.push(char);
+          //   } else {
+          //     tokens.push((tokens.pop() ?? '') + char);
+          //   }
+          // }
+
+          await adapter.continueConversation(conversationReference, async context => {
+            let content = '';
+            let index = 0;
+
+            for (const token of tokens) {
+              content += token;
+
+              await context.sendActivity({
+                attachments: [{ content, contentType: 'application/vnd.microsoft.card.adaptive+yaml' }],
+                channelData: { streamId },
+                id: `${streamId}-${++index}`,
+                text: 'Here is the latest flight update.',
+                type: 'typing'
+              });
+
+              await new Promise(resolve => setTimeout(resolve, 50));
+            }
+
+            await context.sendActivity({
+              attachments: [{ content, contentType: 'application/vnd.microsoft.card.adaptive+yaml' }],
+              channelData: { streamId },
+              id: `${streamId}-${++index}`,
+              suggestedActions: SUGGESTED_ACTIONS,
+              text: 'Here is the latest flight update.',
+              type: 'message'
+            });
+          });
+        })();
       } else {
         if (!(await gptLimiter.tryRemoveTokens(1))) {
           return await context.sendActivity(
