@@ -64,7 +64,7 @@ export default memo(function App() {
               onErrorResumeNext(() => YAML.parse(attachment.content.split('\n').slice(0, -1).join('\n'))) ??
               '';
 
-            console.log(attachment.content);
+            // console.log(attachment.content);
 
             return next({
               ...args,
