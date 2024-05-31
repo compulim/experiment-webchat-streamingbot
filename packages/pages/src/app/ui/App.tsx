@@ -5,12 +5,13 @@ import {
   createHalfDuplexChatAdapter,
   toDirectLineJS
 } from 'copilot-studio-direct-to-engine-chat-adapter';
+import { onErrorResumeNext } from 'on-error-resume-next';
 import React, { memo, useEffect, useRef, type ReactNode } from 'react';
 import YAML from 'yaml';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const { createDirectLine, renderWebChat } = (window as any)['WebChat'];
-const IS_LOCAL = true;
+const IS_LOCAL = false;
 
 export default memo(function App() {
   const divRef = useRef<HTMLDivElement>(null);
@@ -58,12 +59,16 @@ export default memo(function App() {
           const [{ attachment }] = args as [{ attachment: { content: string; contentType: string } }];
 
           if (attachment.contentType === 'application/vnd.microsoft.card.adaptive+yaml') {
+            const content =
+              onErrorResumeNext(() => YAML.parse(attachment.content)) ??
+              onErrorResumeNext(() => YAML.parse(attachment.content.split('\n').slice(0, -1).join('\n'))) ??
+              '';
+
+            console.log(attachment.content);
+
             return next({
               ...args,
-              attachment: {
-                content: YAML.parse(attachment.content),
-                contentType: 'application/vnd.microsoft.card.adaptive'
-              }
+              attachment: { content, contentType: 'application/vnd.microsoft.card.adaptive' }
             });
           }
 

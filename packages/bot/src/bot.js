@@ -3,7 +3,7 @@
 
 import { ActivityHandler, MessageFactory, TurnContext } from 'botbuilder';
 import { EventSourceParserStream } from 'eventsource-parser/stream';
-import YAML from 'json-to-pretty-yaml';
+import YAML from 'yaml';
 import Limiter from '../node_modules/limiter/dist/cjs/index.js';
 
 import createBotFrameworkAdapter from './createBotFrameworkAdapter.js';
@@ -396,17 +396,17 @@ export default class EchoBot extends ActivityHandler {
         (async function () {
           const { adapter } = context;
           const content = YAML.stringify(flightUpdateCard());
-          const tokens = content.split('\n').map(line => line + '\n');
-          // const tokens = [];
-          // const TOKEN_SIZE = 5;
+          // const tokens = content.split('\n').map(line => line + '\n');
+          const tokens = [];
+          const TOKEN_SIZE = 5;
 
-          // for (const char of content.split('')) {
-          //   if ((tokens[tokens.length - 1]?.length ?? 0) >= TOKEN_SIZE) {
-          //     tokens.push(char);
-          //   } else {
-          //     tokens.push((tokens.pop() ?? '') + char);
-          //   }
-          // }
+          for (const char of content.split('')) {
+            if ((tokens[tokens.length - 1]?.length ?? 0) >= TOKEN_SIZE) {
+              tokens.push(char);
+            } else {
+              tokens.push((tokens.pop() ?? '') + char);
+            }
+          }
 
           await adapter.continueConversation(conversationReference, async context => {
             let content = '';
@@ -423,7 +423,7 @@ export default class EchoBot extends ActivityHandler {
                 type: 'typing'
               });
 
-              await new Promise(resolve => setTimeout(resolve, 50));
+              await new Promise(resolve => setTimeout(resolve, 20));
             }
 
             await context.sendActivity({

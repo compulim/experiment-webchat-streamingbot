@@ -30,6 +30,7 @@
   },
   "dependencies": {
     "copilot-studio-direct-to-engine-chat-adapter": "^0.0.0-main.20240517-002626.14d9a8c",
+    "on-error-resume-next": "^2.0.0-main.8668b8f",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "yaml": "^2.4.2"
