@@ -8,6 +8,7 @@ import Limiter from '../node_modules/limiter/dist/cjs/index.js';
 
 import createBotFrameworkAdapter from './createBotFrameworkAdapter.js';
 import flightUpdateCard from './flightUpdateCard.js';
+import answerQuestionWithAINode from './sampleData/answerQuestionWithAINode.js';
 import sleep from './utils/sleep.js';
 
 const gptLimiter = new Limiter.RateLimiter({ tokensPerInterval: 5, interval: 'minute' });
@@ -434,6 +435,26 @@ export default class EchoBot extends ActivityHandler {
               text: 'Here is the latest flight update.',
               type: 'message'
             });
+          });
+        })();
+      } else if (text === 'cps') {
+        await context.sendActivity(MessageFactory.text('Sending with Copilot Studio sample payload'));
+
+        // Quirks: We need to somehow tell the adapter don't close the connection.
+        'willContinue' in context.adapter && context.adapter.willContinue(context);
+
+        // By calling next, we will acknowledge the message sent from the user.
+        await next();
+
+        (async function () {
+          const { adapter } = context;
+
+          await adapter.continueConversation(conversationReference, async context => {
+            for await (const entry of answerQuestionWithAINode()) {
+              entry.event === 'activity' && context.sendActivity(JSON.parse(entry.data));
+
+              await sleep(20);
+            }
           });
         })();
       } else {
