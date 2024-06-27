@@ -450,8 +450,23 @@ export default class EchoBot extends ActivityHandler {
           const { adapter } = context;
 
           await adapter.continueConversation(conversationReference, async context => {
+            // ID sent by the chat adapter is different from the ID send from the SSE recording.
+            const idMap = new Map();
+
             for await (const entry of answerQuestionWithAINode()) {
-              entry.event === 'activity' && context.sendActivity(JSON.parse(entry.data));
+              if (entry.event === 'activity') {
+                const activity = JSON.parse(entry.data);
+                const { streamId } = activity.channelData || {};
+
+                if (streamId) {
+                  // Patch "channelData.streamId" to match the one filled by the bot adapter.
+                  activity.channelData.streamId = idMap.get(streamId) || streamId;
+                }
+
+                const { id } = await context.sendActivity(activity);
+
+                idMap.set(activity.id, id);
+              }
 
               await sleep(20);
             }
