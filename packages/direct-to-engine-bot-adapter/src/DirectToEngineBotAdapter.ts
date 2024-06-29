@@ -7,6 +7,7 @@ import {
   type ConversationReference,
   type ResourceResponse
 } from 'botbuilder';
+import { parse as parseContentType } from 'content-type';
 import express from 'express';
 import { type IncomingHttpHeaders } from 'node:http';
 import createDeferred, { type DeferredPromise } from 'p-defer';
@@ -33,6 +34,13 @@ function createConversationAccount(conversationId: string): ConversationAccount 
     conversationType: 'direct-to-engine',
     name: conversationId
   };
+}
+
+function shouldAcceptEventSteam(accept: string = '') {
+  return !!accept
+    .split(',')
+    .map(parseContentType)
+    .find(({ type }) => type === 'text/event-stream');
 }
 
 export default class DirectToEngineBotAdapter extends BotAdapter {
@@ -64,7 +72,7 @@ export default class DirectToEngineBotAdapter extends BotAdapter {
       status: (code: number) => void;
     }
   ): Promise<void> {
-    if (!/^text\/event-stream(;|$)/u.test(req.headers.accept || '')) {
+    if (!shouldAcceptEventSteam(req.headers.accept)) {
       res.status(400);
       res.write('Must set Accept: text/event-stream.');
 
@@ -111,7 +119,7 @@ export default class DirectToEngineBotAdapter extends BotAdapter {
       status: (code: number) => void;
     }
   ): Promise<void> {
-    if (!/^text\/event-stream(;|$)/u.test(req.headers.accept || '')) {
+    if (!shouldAcceptEventSteam(req.headers.accept)) {
       res.status(400);
       res.write('Must set Accept: text/event-stream.');
 
